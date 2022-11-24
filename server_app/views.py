@@ -151,21 +151,38 @@ def create_restaurant(request): #Создание ресторана
 
 @csrf_exempt
 def create_order(request): #Создание заказа
-    data = dict(json.loads(request.body.decode()))
-    foodcourt = FoodCourt.objects.all().filter(foodcourt_name=data["restaurant_location"])[0]
-    restautant = Restaurant.objects.all().filter(restaurant_name=data["restaurant_name"])\
-                .filter(restaurant_foodcourt=foodcourt)[0]
-    order_number = Order.static_order_number
-    Order.static_order_number+= 1
-    for dish in data['dishes']:
+    data = dict(json.loads(request.body.decode()))['allCartDishes']
+    for order in data:
         new_order = Order()
+        new_order.order_quantity = order["count"]
+        foodcourt = FoodCourt.objects.all().filter(foodcourt_name=order["restaurantLocation"])[0]
+        restautant = Restaurant.objects.all().filter(restaurant_name=order["restaurantName"]) \
+            .filter(restaurant_foodcourt=foodcourt)[0]
+        new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
         new_order.order_restautant = restautant
-        new_order.order_dish = Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=dish['name'])[0]
-        new_order.order_number = order_number
+        new_order.order_number = Order.static_order_number
         new_order.save()
+
+    Order.static_order_number += 1
 
     return HttpResponse("ОК")
 
 
+def get_orders_by_restaurant(request): #Получение заказков из определенного ресторана
+    restaurant_name = request.GET.get("name")
+    restaurant_location = request.GET.get("location")
+    restaurant = Restaurant.objects.all().filter(restaurant_name=restaurant_name)\
+                                         .filter(restaurant_location=restaurant_location)
+    orders = Order.objects.all().filter(order_restautant=restaurant)
+    return_dict = {"orders" : []}
+    for order in orders:
+        order_dict = {}
+        order_dict["name"] = order.order_dish.dish_name
+        order_dict["quantity"] = order.order_quantity
+        return_dict["orders"].append(order_dict)
+    return_dict["date"] = orders[0].order_date
+    json_dict = json.dumps(return_dict)
+
+    return HttpResponse(json_dict)
 
 

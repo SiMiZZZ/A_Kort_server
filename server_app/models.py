@@ -1,5 +1,6 @@
 from django.db import models
 import json
+import datetime
 
 
 class FoodCourt(models.Model):
@@ -29,8 +30,8 @@ class Order(models.Model):
     order_restautant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
     order_number = models.IntegerField("Номер заказа", default=-1)
     order_dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
-
-
+    order_quantity = models.IntegerField("Количество блюд", default= -1)
+    order_date = models.DateField(auto_now_add=True)
 
 
 

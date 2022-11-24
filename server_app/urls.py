@@ -14,6 +14,7 @@ urlpatterns = [
     path("get_all_restaurants/", views.get_all_restaurants, name="Получение списка ресторанов"),
     path("create_restaurant/", views.create_restaurant, name="Добавление ресторана"),
     path("get_foodcourt_restaurants/", views.get_foodcourt_restaurants, name="Получение списка ресторанов фудкорта"),
-    path("create_order/", views.create_order, name="Создание заказа")
+    path("create_order/", views.create_order, name="Создание заказа"),
+    path("get_orders_by_restaurant/", views.get_orders_by_restaurant, name="Получение заказов в ресторане")
 ]
 
