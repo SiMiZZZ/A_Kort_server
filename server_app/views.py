@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 import base64
 from django.core.files.base import ContentFile
 import os
+from itertools import groupby
+
 
 from rest_framework import generics
 
@@ -152,6 +154,11 @@ def create_restaurant(request): #Создание ресторана
 @csrf_exempt
 def create_order(request): #Создание заказа
     data = dict(json.loads(request.body.decode()))['allCartDishes']
+    order_numbers = Order.objects.only("order_number")
+    if (len(order_numbers)) == 0:
+        new_number = 1
+    else:
+        new_number = max(list(map(lambda x: x.order_number, list(order_numbers))))+1
     for order in data:
         new_order = Order()
         new_order.order_quantity = order["count"]
@@ -160,7 +167,7 @@ def create_order(request): #Создание заказа
             .filter(restaurant_foodcourt=foodcourt)[0]
         new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
         new_order.order_restautant = restautant
-        new_order.order_number = Order.static_order_number
+        new_order.order_number = new_number
         new_order.save()
 
     Order.static_order_number += 1
@@ -171,18 +178,20 @@ def create_order(request): #Создание заказа
 def get_orders_by_restaurant(request): #Получение заказков из определенного ресторана
     restaurant_name = request.GET.get("name")
     restaurant_location = request.GET.get("location")
+    foodcourt = FoodCourt.objects.all().filter(foodcourt_name=restaurant_location)[0]
     restaurant = Restaurant.objects.all().filter(restaurant_name=restaurant_name)\
-                                         .filter(restaurant_location=restaurant_location)
-    orders = Order.objects.all().filter(order_restautant=restaurant)
-    return_dict = {"orders" : []}
-    for order in orders:
-        order_dict = {}
-        order_dict["name"] = order.order_dish.dish_name
-        order_dict["quantity"] = order.order_quantity
-        return_dict["orders"].append(order_dict)
-    return_dict["date"] = orders[0].order_date
+                                         .filter(restaurant_foodcourt=foodcourt)[0]
+    orders = list(Order.objects.all().filter(order_restautant=restaurant))
+    orders = sorted(orders, key=lambda x: x.order_number)
+    return_dict = {}
+    for order_number, orders in groupby(orders, lambda x: x.order_number):
+        return_dict[order_number] = []
+        for order in orders:
+            order_dict = {}
+            order_dict["name"] = order.order_dish.dish_name
+            order_dict["quantity"] = order.order_quantity
+            return_dict[order_number].append(order_dict)
     json_dict = json.dumps(return_dict)
-
     return HttpResponse(json_dict)
 
 
