@@ -153,25 +153,24 @@ def create_restaurant(request): #Создание ресторана
 
 @csrf_exempt
 def create_order(request): #Создание заказа
-    data = dict(json.loads(request.body.decode()))['allCartDishes']
+    data = dict(json.loads(request.body.decode()))
     order_numbers = Order.objects.only("order_number")
     if (len(order_numbers)) == 0:
         new_number = 1
     else:
         new_number = max(list(map(lambda x: x.order_number, list(order_numbers))))+1
-    for order in data:
-        new_order = Order()
-        new_order.order_quantity = order["count"]
-        foodcourt = FoodCourt.objects.all().filter(foodcourt_name=order["restaurantLocation"])[0]
-        restautant = Restaurant.objects.all().filter(restaurant_name=order["restaurantName"]) \
-            .filter(restaurant_foodcourt=foodcourt)[0]
-        new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
-        new_order.order_restautant = restautant
-        new_order.order_number = new_number
-        new_order.save()
-
-    Order.static_order_number += 1
-
+    for restautant in data.keys():
+        restautant_name, location = restautant.split(", ")
+        for order in data[restautant]:
+            new_order = Order()
+            new_order.order_quantity = order["count"]
+            foodcourt = FoodCourt.objects.all().filter(foodcourt_name=location)[0]
+            restautant = Restaurant.objects.all().filter(restaurant_name=restautant_name) \
+                .filter(restaurant_foodcourt=foodcourt)[0]
+            new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
+            new_order.order_restautant = restautant
+            new_order.order_number = new_number
+            new_order.save()
     return HttpResponse("ОК")
 
 
@@ -183,15 +182,16 @@ def get_orders_by_restaurant(request): #Получение заказков из
                                          .filter(restaurant_foodcourt=foodcourt)[0]
     orders = list(Order.objects.all().filter(order_restautant=restaurant))
     orders = sorted(orders, key=lambda x: x.order_number)
-    return_dict = {}
+    return_list = []
     for order_number, orders in groupby(orders, lambda x: x.order_number):
-        return_dict[order_number] = []
+        return_dict = {"number" : order_number, "dishes" : []}
         for order in orders:
             order_dict = {}
             order_dict["name"] = order.order_dish.dish_name
             order_dict["quantity"] = order.order_quantity
-            return_dict[order_number].append(order_dict)
-    json_dict = json.dumps(return_dict)
+            return_dict["dishes"].append(order_dict)
+        return_list.append(return_dict)
+    json_dict = json.dumps(return_list)
     return HttpResponse(json_dict)
 
 
