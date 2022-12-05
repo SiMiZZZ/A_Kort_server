@@ -199,14 +199,14 @@ def register_user(request):
     login = data["login"]
     hash_password = hashlib.md5(data["password"].encode()).hexdigest()
     register_user = User.objects.filter(user_email=login)
-    if len(register_user>0):
-        return HttpResponse(False)
+    if len(register_user)>0:
+        return HttpResponse(json.dumps(False))
     else:
         new_user = User()
         new_user.user_email = login
         new_user.user_password_hash = hash_password
         new_user.save()
-    return HttpResponse(True)
+    return HttpResponse(json.dumps(True))
 
 @csrf_exempt
 def auth_user(request):
@@ -214,6 +214,6 @@ def auth_user(request):
     login = data["login"]
     hash_password = hashlib.md5(data["password"].encode()).hexdigest()
     authed_user = User.objects.filter(user_email=login).filter(user_password_hash=hash_password)
-    if len(authed_user>0):
-        return HttpResponse(True)
-    return HttpResponse(False)
+    if len(authed_user)>0:
+        return HttpResponse(json.dumps(True))
+    return HttpResponse(json.dumps(False))
