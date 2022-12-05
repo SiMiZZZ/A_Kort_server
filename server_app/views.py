@@ -10,6 +10,7 @@ import base64
 from django.core.files.base import ContentFile
 import os
 from itertools import groupby
+import hashlib
 
 
 from rest_framework import generics
@@ -30,7 +31,6 @@ def add_dish(request): #добавление нового блюда в меню
     address = data["restaurant_location"]
     foodcourt = FoodCourt.objects.all().filter(foodcourt_name=address)[0]
     new_dish.dish_restaurant = Restaurant.objects.all().filter(restaurant_name=name).filter(restaurant_foodcourt=foodcourt)[0]
-
     # Код по сохранению фото
     if "dish_image" in data.keys():
         format, imgstr = dict(data)["dish_image"].split(';base64,')
@@ -59,7 +59,6 @@ def get_all_dishes(request): #Получение всех блюд, лежащи
         return_dict["dishes"].append(dish_dict)
     json_dict = json.dumps(return_dict)
     return HttpResponse(json_dict)
-
 
 
 def get_image(request): #получение картинки по ссылке
@@ -194,4 +193,27 @@ def get_orders_by_restaurant(request): #Получение заказков из
     json_dict = json.dumps(return_list)
     return HttpResponse(json_dict)
 
+@csrf_exempt
+def register_user(request):
+    data = dict(json.loads(request.body.decode()))
+    login = data["login"]
+    hash_password = hashlib.md5(data["password"].encode()).hexdigest()
+    register_user = User.objects.filter(user_email=login)
+    if len(register_user>0):
+        return HttpResponse(False)
+    else:
+        new_user = User()
+        new_user.user_email = login
+        new_user.user_password_hash = hash_password
+        new_user.save()
+    return HttpResponse(True)
 
+@csrf_exempt
+def auth_user(request):
+    data = dict(json.loads(request.body.decode()))
+    login = data["login"]
+    hash_password = hashlib.md5(data["password"].encode()).hexdigest()
+    authed_user = User.objects.filter(user_email=login).filter(user_password_hash=hash_password)
+    if len(authed_user>0):
+        return HttpResponse(True)
+    return HttpResponse(False)

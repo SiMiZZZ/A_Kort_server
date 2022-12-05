@@ -3,6 +3,11 @@ import json
 import datetime
 
 
+class User(models.Model):
+    user_email = models.CharField("Email", max_length=40, default="NULL")
+    user_password_hash = models.TextField("Хэш пароля", max_length=200, default="NULL")
+
+
 class FoodCourt(models.Model):
     foodcourt_name = models.CharField("Название", max_length=30, default="NULL")
     #foodcourt_address = models.CharField("Адрес", max_length=30, default="NULL")
@@ -32,6 +37,7 @@ class Order(models.Model):
     order_dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
     order_quantity = models.IntegerField("Количество блюд", default= -1)
     order_date = models.DateField(auto_now_add=True)
+    order_user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 

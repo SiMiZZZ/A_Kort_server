@@ -15,6 +15,8 @@ urlpatterns = [
     path("create_restaurant/", views.create_restaurant, name="Добавление ресторана"),
     path("get_foodcourt_restaurants/", views.get_foodcourt_restaurants, name="Получение списка ресторанов фудкорта"),
     path("create_order/", views.create_order, name="Создание заказа"),
-    path("get_orders_by_restaurant/", views.get_orders_by_restaurant, name="Получение заказов в ресторане")
+    path("get_orders_by_restaurant/", views.get_orders_by_restaurant, name="Получение заказов в ресторане"),
+    path("register_user/", views.register_user, name="Регистрация пользователя"),
+    path("auth_user/", views.auth_user, name="Авторизация пользователя")
 ]
 
