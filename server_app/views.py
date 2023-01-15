@@ -63,7 +63,7 @@ def get_all_dishes(request): #Получение всех блюд, лежащи
 
 
 def get_image(request): #получение картинки по ссылке
-    file_location = str(settings.MEDIA_ROOT) + request.GET.get("image")
+    file_location = "media/" + request.GET.get("image")
     with open(file_location, "rb") as f:
         file_data = f.read()
     return HttpResponse(file_data, content_type="image/png")
@@ -72,10 +72,11 @@ def get_image(request): #получение картинки по ссылке
 def delete_dish(request): #Удаление блюда из базы
     name = request.GET.get("name")
     dish_image_name = Dish.objects.all().filter(dish_name=name)[0].dish_image
+    Dish.objects.filter(dish_name=name).delete()
     if dish_image_name != "":
         file_location = "./media/{0}".format(dish_image_name)
         os.remove(file_location)
-    Dish.objects.filter(dish_name=name).delete()
+
     return HttpResponse("ОК")
 
 
