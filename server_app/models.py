@@ -10,7 +10,10 @@ class User(models.Model):
 
 class FoodCourt(models.Model):
     foodcourt_name = models.CharField("Название", max_length=30, default="NULL")
+    foodcourt_width = models.CharField("Широта", max_length=40, default="NULL")
+    foodcourt_longitude = models.CharField("Долгота", max_length=40, default="NULL")
     #foodcourt_address = models.CharField("Адрес", max_length=30, default="NULL")
+
 
 class Restaurant(models.Model):
     restaurant_name = models.CharField("Название", max_length=30, default="NULL")
@@ -18,7 +21,6 @@ class Restaurant(models.Model):
     restaurant_rating = models.IntegerField("Оценка", default=0)
     restaurant_foodcourt = models.ForeignKey("FoodCourt", on_delete=models.CASCADE, default=1)
     restaurant_image = models.ImageField("Картинка", upload_to="restaurantimages/")
-
 
 
 class Dish(models.Model):
@@ -36,8 +38,9 @@ class Order(models.Model):
     order_number = models.IntegerField("Номер заказа", default=-1)
     order_dish = models.ForeignKey(Dish, on_delete=models.CASCADE)
     order_quantity = models.IntegerField("Количество блюд", default= -1)
-    order_date = models.DateField(auto_now_add=True)
+    order_date = models.DateTimeField(auto_now_add=True)
     order_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    order_status = models.CharField("Статус заказа", max_length=30, default="NULL")
 
 
 

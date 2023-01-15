@@ -11,7 +11,7 @@ from django.core.files.base import ContentFile
 import os
 from itertools import groupby
 import hashlib
-
+import datetime
 
 from rest_framework import generics
 
@@ -116,6 +116,8 @@ def get_all_restaurants(request):
 
 def get_foodcourt_restaurants(request): #Получение рестаранов из данного фурдкорта(по имени фудкорта)
     name = request.GET.get("name")
+    if name == "null":
+        return HttpResponse("Clear page")
     foodcourt = FoodCourt.objects.all().filter(foodcourt_name=name)[0]
     restaurants = Restaurant.objects.all().filter(restaurant_foodcourt=foodcourt)
     return_dict = {"restaurants": []}
@@ -152,23 +154,30 @@ def create_restaurant(request): #Создание ресторана
 
 @csrf_exempt
 def create_order(request): #Создание заказа
+    print(request.body.decode())
     data = dict(json.loads(request.body.decode()))
     order_numbers = Order.objects.only("order_number")
+    user_login = data["login"]
+    user = User.objects.filter(user_email=user_login)[0]
     if (len(order_numbers)) == 0:
         new_number = 1
     else:
         new_number = max(list(map(lambda x: x.order_number, list(order_numbers))))+1
     for restautant in data.keys():
+        if restautant == "login":
+            continue
         restautant_name, location = restautant.split(", ")
         for order in data[restautant]:
             new_order = Order()
             new_order.order_quantity = order["count"]
+            new_order.order_user = user
             foodcourt = FoodCourt.objects.all().filter(foodcourt_name=location)[0]
             restautant = Restaurant.objects.all().filter(restaurant_name=restautant_name) \
                 .filter(restaurant_foodcourt=foodcourt)[0]
             new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
             new_order.order_restautant = restautant
             new_order.order_number = new_number
+            new_order.order_status = "cook"
             new_order.save()
     return HttpResponse("ОК")
 
@@ -184,12 +193,15 @@ def get_orders_by_restaurant(request): #Получение заказков из
     return_list = []
     for order_number, orders in groupby(orders, lambda x: x.order_number):
         return_dict = {"number" : order_number, "dishes" : []}
+        completed_order = False
         for order in orders:
+            completed_order = all(lambda x: x.order_status == "completed", orders)
             order_dict = {}
             order_dict["name"] = order.order_dish.dish_name
             order_dict["quantity"] = order.order_quantity
             return_dict["dishes"].append(order_dict)
-        return_list.append(return_dict)
+        if not completed_order:
+            return_list.append(return_dict)
     json_dict = json.dumps(return_list)
     return HttpResponse(json_dict)
 
@@ -217,3 +229,54 @@ def auth_user(request):
     if len(authed_user)>0:
         return HttpResponse(json.dumps(True))
     return HttpResponse(json.dumps(False))
+
+def get_foodcourts(request):
+    foodcourts = FoodCourt.objects.all()
+    return_dict = {"foodcourts": []}
+    for foodcourt in foodcourts:
+        foodcourt_dict = {}
+        foodcourt_dict["name"] = foodcourt.foodcourt_name
+        foodcourt_dict["latitude"] = foodcourt.foodcourt_width
+        foodcourt_dict["longitude"] = foodcourt.foodcourt_longitude
+        return_dict["foodcourts"].append(foodcourt_dict)
+    return_dict = json.dumps(return_dict)
+    return HttpResponse(return_dict)
+
+def get_orders_by_user(request):
+    user_login = request.GET.get("login")
+    user = User.objects.filter(user_email=user_login)[0]
+    orders = Order.objects.filter(order_user=user)
+    orders = sorted(orders, key=lambda x: x.order_number)
+    return_list = []
+    for order_number, local_orders in groupby(orders, lambda x: x.order_number):
+        list_orders = tuple(local_orders)
+        print(list_orders)
+        first_item = list_orders[0]
+        return_dict = {"number": order_number,
+                       "date": str(first_item.order_date.strftime("%d.%m.%Y")),
+                       "location": first_item.order_restautant.restaurant_foodcourt.foodcourt_name,
+                       "dishes": [],
+                       "price": sum(map(lambda x: x.order_dish.dish_price * x.order_quantity, list_orders)),
+                       "status": "completed" if all(map(lambda x: x.order_status == "completed", local_orders)) else "cooked"
+                       }
+
+        for order in list_orders:
+            order_dict = {}
+            order_dict["name"] = order.order_dish.dish_name
+            order_dict["quantity"] = order.order_quantity
+            order_dict["price"] = order.order_dish.dish_price
+            order_dict["restaurant"] = order.order_dish.dish_restaurant.restaurant_name
+            return_dict["dishes"].append(order_dict)
+        return_list.append(return_dict)
+    json_dict = json.dumps(return_list)
+    return HttpResponse(json_dict)
+
+def make_order_completed(request):
+    order_id = request.GET.get("id")
+    orders = Order.objects.filter(order_number=order_id)
+    for order in orders:
+        order.order_status = "completed"
+        order.save()
+    return HttpResponse("OK")
+
+

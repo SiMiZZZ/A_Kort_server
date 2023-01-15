@@ -17,6 +17,9 @@ urlpatterns = [
     path("create_order/", views.create_order, name="Создание заказа"),
     path("get_orders_by_restaurant/", views.get_orders_by_restaurant, name="Получение заказов в ресторане"),
     path("register_user/", views.register_user, name="Регистрация пользователя"),
-    path("auth_user/", views.auth_user, name="Авторизация пользователя")
+    path("auth_user/", views.auth_user, name="Авторизация пользователя"),
+    path("get_foodcourts/", views.get_foodcourts, name="Получение ресторанов"),
+    path("get_orders_by_user/", views.get_orders_by_user, name="Получение заказов определенного пользователя"),
+    path("make_order_completed/", views.make_order_completed, name="Изменение статуса заказа на готовый")
 ]
 
