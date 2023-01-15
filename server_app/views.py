@@ -177,7 +177,7 @@ def create_order(request): #Создание заказа
             new_order.order_dish= Dish.objects.all().filter(dish_restaurant=restautant).filter(dish_name=order["dish"]["name"])[0]
             new_order.order_restautant = restautant
             new_order.order_number = new_number
-            new_order.order_status = "cook"
+            new_order.order_status = "cooked"
             new_order.save()
     return HttpResponse("ОК")
 
@@ -191,17 +191,17 @@ def get_orders_by_restaurant(request): #Получение заказков из
     orders = list(Order.objects.all().filter(order_restautant=restaurant))
     orders = sorted(orders, key=lambda x: x.order_number)
     return_list = []
-    for order_number, orders in groupby(orders, lambda x: x.order_number):
+    for order_number, orders_col in groupby(orders, lambda x: x.order_number):
         return_dict = {"number" : order_number, "dishes" : []}
-        completed_order = False
-        for order in orders:
-            completed_order = all(lambda x: x.order_status == "completed", orders)
+        completed_order = all(map(lambda x: x.order_status == "completed", list(filter(lambda x: x.order_number == order_number, orders))))
+        if completed_order:
+            continue
+        for order in orders_col:
             order_dict = {}
             order_dict["name"] = order.order_dish.dish_name
             order_dict["quantity"] = order.order_quantity
             return_dict["dishes"].append(order_dict)
-        if not completed_order:
-            return_list.append(return_dict)
+        return_list.append(return_dict)
     json_dict = json.dumps(return_list)
     return HttpResponse(json_dict)
 
@@ -250,14 +250,13 @@ def get_orders_by_user(request):
     return_list = []
     for order_number, local_orders in groupby(orders, lambda x: x.order_number):
         list_orders = tuple(local_orders)
-        print(list_orders)
         first_item = list_orders[0]
         return_dict = {"number": order_number,
                        "date": str(first_item.order_date.strftime("%d.%m.%Y")),
                        "location": first_item.order_restautant.restaurant_foodcourt.foodcourt_name,
                        "dishes": [],
                        "price": sum(map(lambda x: x.order_dish.dish_price * x.order_quantity, list_orders)),
-                       "status": "completed" if all(map(lambda x: x.order_status == "completed", local_orders)) else "cooked"
+                       "status": "completed" if all(map(lambda x: x.order_status == "completed", list_orders)) else "cooked"
                        }
 
         for order in list_orders:
