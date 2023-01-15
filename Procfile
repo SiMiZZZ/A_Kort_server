@@ -1,1 +1,1 @@
-web: gunicorn A_Kort_server.wsgi --log-file -
+web: gunicorn A_Kort_server.wsgi
