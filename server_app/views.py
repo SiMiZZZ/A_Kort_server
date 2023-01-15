@@ -63,7 +63,7 @@ def get_all_dishes(request): #Получение всех блюд, лежащи
 
 
 def get_image(request): #получение картинки по ссылке
-    file_location = settings.MEDIA_ROOT + request.GET.get("image")
+    file_location = str(settings.MEDIA_ROOT) + request.GET.get("image")
     with open(file_location, "rb") as f:
         file_data = f.read()
     return HttpResponse(file_data, content_type="image/png")
